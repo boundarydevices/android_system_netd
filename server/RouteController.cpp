@@ -17,6 +17,7 @@
 #include "RouteController.h"
 
 #include <arpa/inet.h>
+#include <cutils/properties.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/fib_rules.h>
@@ -976,9 +977,20 @@ WARN_UNUSED_RESULT int clearTetheringRules(const char* inputInterface) {
 
 }  // namespace
 
+static bool isNFSbooted() {
+    char prop_value[PROPERTY_VALUE_MAX] = {'\0'};
+    if (property_get("ro.nfs.mode", prop_value, "no")) {
+        if (strcmp(prop_value, "yes") == 0)
+            return true;
+    }
+    return false;
+}
+
 int RouteController::Init(unsigned localNetId) {
-    if (int ret = flushRules()) {
-        return ret;
+    if (!isNFSbooted()){
+        if (int ret = flushRules()) {
+            return ret;
+        }
     }
     if (int ret = addLegacyRouteRules()) {
         return ret;
